@@ -1,31 +1,24 @@
 # NLP Movie Recommendation System
 
-Content-based movie recommender using **TF-IDF + Cosine Similarity**, with a weighted
-multi-feature engine and a Streamlit UI.
+A content-based movie recommender built with **TF-IDF + Cosine Similarity**, featuring a
+weighted multi-feature scoring engine and a Streamlit web UI.
 
-## Files
-- `movie_recommender.ipynb` — **Level 1**: single merged TF-IDF over genre+keywords+overview. Avg Precision@5 = 0.71
-- `movie_recommender_level2.ipynb` — **Level 2**: separate TF-IDF per feature (plot/genre/keyword/cast/director), combined with weights (50/20/15/10/5). Avg Precision@5 = 0.74. Also includes a weight-tuning experiment comparing 3 weight configurations.
-- `app.py` — **Level 3**: Streamlit UI (currently wired to the Level 1 artifacts — see note below to switch it to Level 2)
-- `data/tmdb_5000_movies.csv`, `data/tmdb_5000_credits.csv` — TMDB 5000 dataset (movies + cast/crew)
-- `movies.pkl`, `tfidf_vectorizer.pkl`, `tfidf_matrix.pkl` — Level 1 saved artifacts
-- `movies_v2.pkl` — Level 2 saved artifacts (dict containing the dataframe + 5 vectorizers + 5 matrices + weights)
+## Overview
+This project recommends movies based on content similarity — not user ratings or collaborative
+filtering — using the TMDB 5000 dataset. It was built in two iterations to explore how feature
+engineering affects recommendation quality, going from a single merged text blob to a weighted
+multi-feature scoring model.
 
-## How to run the notebooks
-1. Keep `data/tmdb_5000_movies.csv` and `data/tmdb_5000_credits.csv` in the `data/` subfolder.
-2. `pip install pandas numpy scikit-learn nltk jupyter ipykernel`
-3. Run `movie_recommender.ipynb` first (Level 1), then `movie_recommender_level2.ipynb` (Level 2) — Run All on each.
+## Approach
 
-## How to run the web app
-1. Make sure `movies.pkl`, `tfidf_vectorizer.pkl`, `tfidf_matrix.pkl` exist (from running Level 1).
-2. `pip install streamlit scikit-learn nltk pandas`
-3. `streamlit run app.py`
-4. Opens at `http://localhost:8501`.
+**V1 — Single TF-IDF blob**
+Genre, keywords, and overview are merged into one text field per movie, then scored with a
+single TF-IDF + cosine similarity model.
+→ Avg Precision@5: **0.71**
 
-## Level 1 vs Level 2 — what changed
-Level 1 merges genre + keywords + overview into **one** text blob per movie and runs a single TF-IDF.
-Level 2 keeps **five separate fields** (plot, genre, keywords, cast, director), scores each with its
-own TF-IDF + cosine similarity, then blends the five scores with explicit weights:
+**V2 — Weighted multi-feature model**
+Five fields (plot, genre, keywords, cast, director) are kept separate, each scored with its own
+TF-IDF + cosine similarity, then blended using explicit weights:
 
 | Feature   | Weight |
 |-----------|--------|
@@ -35,21 +28,36 @@ own TF-IDF + cosine similarity, then blends the five scores with explicit weight
 | Cast      | 10%    |
 | Director  | 5%     |
 
-This is more explainable (you can report *how much* each factor contributed to a match) and tunable —
-the notebook includes a small experiment comparing this weighting against a "plot-heavy" and a
-"genre-heavy" alternative, measured by Precision@5.
+This approach is more explainable (each factor's contribution to a match can be reported) and
+tunable — a small experiment in the notebook compares this weighting against "plot-heavy" and
+"genre-heavy" alternatives, measured by Precision@5.
+→ Avg Precision@5: **0.74**
 
-**Important bug fix along the way:** the first version of Level 2 squashed multi-word genre/keyword
-names into single tokens (`"Science Fiction"` → `"sciencefiction"`), which silently broke matching for
-any query written the normal way. Fixed by keeping natural spacing and using `ngram_range=(1,2)` so
-phrase matches like "science fiction" still work as a unit. Precision@5 went from a broken 0.40 to 1.00
-on the sci-fi test query after the fix — worth mentioning in your report as a debugging example.
+**Debugging note:** an early version of V2 collapsed multi-word genre/keyword phrases into single
+tokens (e.g. `"Science Fiction"` → `"sciencefiction"`), which silently broke matching for any
+naturally-typed query. Fixed by preserving spacing and using `ngram_range=(1,2)` so phrase matches
+like "science fiction" work correctly. Precision@5 on the sci-fi test query went from **0.40 → 1.00**
+after the fix.
 
-## Project levels
-- **Level 1 (done)** — `movie_recommender.ipynb`
-- **Level 2 (done)** — `movie_recommender_level2.ipynb`
-- **Level 3 (done)** — `app.py` (Streamlit UI, currently using Level 1 artifacts)
+## Files
+- `movie_recommender.ipynb` — V1: single merged TF-IDF model
+- `movie_recommender_level2.ipynb` — V2: weighted multi-feature model + weight-tuning experiment
+- `app.py` — Streamlit UI (currently using V1 artifacts)
+- `data/tmdb_5000_movies.csv`, `data/tmdb_5000_credits.csv` — TMDB 5000 dataset
+- `movies.pkl`, `tfidf_vectorizer.pkl`, `tfidf_matrix.pkl` — V1 saved artifacts
+- `movies_v2.pkl` — V2 saved artifacts (dataframe + 5 vectorizers + 5 matrices + weights)
 
-## Optional next step
-Wire `app.py` to `movies_v2.pkl` and add a toggle ("Basic" vs "Weighted") so the demo can show both
-engines side by side — good for the viva if you're asked to justify the weighting choice.
+## Setup & Usage
+
+### Notebooks
+```bash
+pip install pandas numpy scikit-learn nltk jupyter ipykernel
+```
+Keep the two CSVs in `data/`, then run `movie_recommender.ipynb` first, followed by
+`movie_recommender_level2.ipynb` (Run All on each).
+
+### Web app
+```bash
+pip install streamlit scikit-learn nltk pandas
+streamlit run app.py
+```
